@@ -1,44 +1,122 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import main_1 from '../assets/image/main_1.jpg'
+import main_2 from '../assets/image/main_2.jpg'
+import main_3 from '../assets/image/main_3.jpg'
+import main_4 from '../assets/image/main_4.jpg'
 
-// Mock Data
-const MOCK_WEEKLY_EVENTS = {
-  2: [{ time: '16:00', title: '3막 모르둠 하드', participants: ['카제로스', '우엑'] }],
-  4: [{ time: '16:00', title: '서막 에키드나 하드', participants: ['카제로스', '깐부'] }],
+// Mock Data - type 추가 (personal, friend, raid)
+const MOCK_INITIAL_EVENTS = {
+  '2025-08-12': [{ time: '16:00', title: '3막 모르둠 하드', type: 'friend' }],
+  '2025-08-14': [{ time: '16:00', title: '2막 아브렐슈드 노말', type: 'friend' }],
+  '2025-08-20': [{ time: '20:00', title: '카제로스 공대', type: 'raid' }],
+  '2025-08-21': [{ time: '21:00', title: '개인 용무', type: 'personal' }],
+  '2025-07-31': [{ time: '18:00', title: '월말정산', type: 'personal' }], // 이전 달 데이터 예시
 };
 const MOCK_EVENT_IMAGES = [
-    'https://placehold.co/200x400/3b82f6/ffffff?text=Event+1',
-    'https://placehold.co/200x400/ef4444/ffffff?text=Event+2',
-    'https://placehold.co/200x400/22c55e/ffffff?text=Event+3',
+    main_1,main_2,main_3,main_4
 ];
 
 const MOCK_NOTICES = [
     { 
         id: 1, 
-        title: '카멘 익스트림, 4막, 종막 카제로스 레이드 추가',
-        summary: '아래 레이드들이 추가되었습니다! - 카멘 익스트림 / 노말 1관...',
-        date: '6/23(월) 15:19',
-        categoryColor: 'text-red-400'
+        category: '공지',
+        title: '리샤의 편지에서 카제로스 레이드의 마지막 장과 업데이트 소식을 전합니다.',
+        date: '2025.08.14',
     },
     { 
         id: 2, 
-        title: '도전 출근왕 날짜 계산기 추가',
-        summary: '안녕하세요! 50일 도전 출근왕 날짜 계산기가 ...',
-        date: '4/22(화) 10:32',
-        categoryColor: 'text-blue-400'
+        category: '상점',
+        title: '8월 13일(수) 신규 상품 및 확률 안내',
+        date: '2025.08.13',
     },
     { 
         id: 3, 
-        title: '커스텀 휴식게이지 자동 충전 공지',
-        summary: '안녕하세요. 커스텀 숙제 데이터 이전 과정에서 정상적이지 ...',
-        date: '3/14(금) 09:02',
-        categoryColor: 'text-green-400'
+        category: '점검',
+        title: '8월 13일(수) 업데이트 내역 안내',
+        date: '2025.08.13',
     },
 ];
 
 // HomePage의 서브 컴포넌트들
+
+const AddEventModal = ({ isOpen, onClose, onAddEvent }) => {
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState('12:00');
+    const [title, setTitle] = useState('');
+    const [type, setType] = useState('personal');
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (date && title) {
+            onAddEvent({ date, time, title, type });
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={onClose}>
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">일정 추가</h2>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><X size={20} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-sm font-semibold">날짜</label>
+                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full mt-1 p-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    </div>
+                    <div>
+                        <label className="text-sm font-semibold">시간</label>
+                        <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full mt-1 p-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    </div>
+                    <div>
+                        <label className="text-sm font-semibold">일정명</label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="일정명을 입력하세요" className="w-full mt-1 p-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    </div>
+                    <div>
+                        <label className="text-sm font-semibold">구분</label>
+                        <select value={type} onChange={e => setType(e.target.value)} className="w-full mt-1 p-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="personal">개인</option>
+                            <option value="friend">깐부</option>
+                            <option value="raid">공격대</option>
+                        </select>
+                    </div>
+                    <button type="submit" className="w-full py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700">추가</button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 const WeeklyCalendarCard = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [events, setEvents] = useState(MOCK_INITIAL_EVENTS);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const changeWeek = (offset) => {
+        setCurrentDate(prevDate => {
+            const newDate = new Date(prevDate);
+            newDate.setDate(newDate.getDate() + offset * 7);
+            return newDate;
+        });
+    };
+
+    const handleAddEvent = (newEvent) => {
+        setEvents(prevEvents => {
+            const newEvents = { ...prevEvents };
+            if (!newEvents[newEvent.date]) {
+                newEvents[newEvent.date] = [];
+            }
+            newEvents[newEvent.date].push({ time: newEvent.time, title: newEvent.title, type: newEvent.type });
+            newEvents[newEvent.date].sort((a, b) => a.time.localeCompare(b.time));
+            return newEvents;
+        });
+    };
+
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const weekDays = Array(7).fill(0).map((_, i) => {
         const d = new Date(currentDate);
@@ -46,33 +124,58 @@ const WeeklyCalendarCard = () => {
         return d;
     });
 
+    const EventBadge = ({ time, title, type }) => {
+        const typeStyles = {
+            personal: 'bg-green-500/80 dark:bg-green-500/50 text-white',
+            friend: 'bg-blue-500/80 dark:bg-blue-500/50 text-white',
+            raid: 'bg-red-500/80 dark:bg-red-500/50 text-white',
+        };
+        const displayTitle = type === 'friend' ? `[깐부] ${title}` : title;
+        return (
+            <div className={`p-2 rounded-md ${typeStyles[type] || 'bg-gray-200 dark:bg-gray-700/50'}`}>
+                <p className="text-xs font-bold truncate">{time} {displayTitle}</p>
+            </div>
+        );
+    };
+
     return (
-        <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg h-full">
-            <div className="flex justify-between items-center mb-6">
-                <p className="font-bold text-xl">{`${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`}</p>
-                <div className="flex items-center space-x-2">
-                    <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronLeft size={20} /></button>
-                    <button className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronRight size={20} /></button>
-                    <button className="p-2 bg-gray-200/50 dark:bg-gray-700/50 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><Plus size={20} /></button>
+        <>
+            <AddEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddEvent={handleAddEvent} />
+            <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg h-full">
+                <div className="flex justify-between items-center mb-6">
+                    <p className="font-bold text-xl">{`${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`}</p>
+                    <div className="flex items-center space-x-2">
+                        <button onClick={() => changeWeek(-1)} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronLeft size={20} /></button>
+                        <button onClick={() => changeWeek(1)} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><ChevronRight size={20} /></button>
+                        <button onClick={() => setIsModalOpen(true)} className="p-2 bg-gray-200/50 dark:bg-gray-700/50 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><Plus size={20} /></button>
+                    </div>
+                </div>
+                <div className="grid grid-cols-7 gap-4 text-center">
+                    {weekDays.map((date, i) => {
+                        const dateString = date.toISOString().split('T')[0];
+                        const dayEvents = events[dateString] || [];
+                        const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                        return (
+                            <div key={i}>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">{days[i]}</p>
+                                <p className={`font-bold text-lg mt-1 ${
+                                    new Date().toDateString() === date.toDateString() 
+                                        ? 'text-purple-600 dark:text-purple-400' 
+                                        : isCurrentMonth 
+                                            ? '' 
+                                            : 'text-gray-400/50 dark:text-gray-500/50'
+                                }`}>{date.getDate()}</p>
+                                <div className="mt-4 space-y-2 text-left h-32 overflow-y-auto no-scrollbar">
+                                    {dayEvents.map((event, idx) => (
+                                        <EventBadge key={idx} time={event.time} title={event.title} type={event.type} />
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
-            <div className="grid grid-cols-7 gap-4 text-center">
-                {weekDays.map((date, i) => (
-                    <div key={i}>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">{days[i]}</p>
-                        <p className={`font-bold text-lg mt-1 ${new Date().toDateString() === date.toDateString() ? 'text-purple-600 dark:text-purple-400' : ''}`}>{date.getDate()}</p>
-                        <div className="mt-4 space-y-2 text-left h-32 overflow-y-auto no-scrollbar">
-                            {(MOCK_WEEKLY_EVENTS[i] || []).map((event, idx) => (
-                                <div key={idx} className="bg-gray-200 dark:bg-gray-700/50 p-2 rounded-md">
-                                    <p className="text-xs font-bold">{event.time} {event.title}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{event.participants.join(' • ')}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
+        </>
     );
 };
 
@@ -115,6 +218,13 @@ const NoticeAndEventsCard = () => {
         }, 3000);
         return () => clearInterval(interval);
     }, []);
+
+    const categoryStyles = {
+        '공지': 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200',
+        '상점': 'bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200',
+        '점검': 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200',
+    };
+
     return (
         <div className="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg h-full flex overflow-hidden">
             <div className="w-1/3 flex items-center justify-center p-4">
@@ -124,12 +234,18 @@ const NoticeAndEventsCard = () => {
                     ))}
                 </div>
             </div>
-            <div className="w-2/3 flex flex-col justify-center p-6 space-y-4">
+            <div className="w-2/3 flex flex-col justify-center p-6 space-y-3">
                 {MOCK_NOTICES.map(notice => (
-                    <div key={notice.id} className="cursor-pointer group">
-                        <h3 className="font-bold text-lg truncate group-hover:text-purple-400">{notice.title}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{notice.summary}</p>
-                        <p className={`text-sm font-semibold mt-1 ${notice.categoryColor}`}>{notice.date}</p>
+                    <div key={notice.id} className="cursor-pointer group border-b border-gray-200 dark:border-gray-700 pb-3 last:border-b-0">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className={`flex-shrink-0 whitespace-nowrap px-2 py-0.5 rounded-md text-xs font-bold ${categoryStyles[notice.category] || categoryStyles['공지']}`}>
+                                    {notice.category}
+                                </span>
+                                <p className="font-semibold truncate group-hover:text-purple-400">{notice.title}</p>
+                            </div>
+                            <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">{notice.date}</span>
+                        </div>
                     </div>
                 ))}
             </div>

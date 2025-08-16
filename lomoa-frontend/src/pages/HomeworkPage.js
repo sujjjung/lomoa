@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Trash2, Plus, X, ChevronsDown } from 'lucide-react';
+import { Settings, Trash2, Plus, X } from 'lucide-react';
 
 // Mock Data
 const ALL_RAIDS = [
@@ -45,7 +45,6 @@ const MOCK_CHARACTERS = [
     settings: { showWeekly: true, showDaily: true, isGoldCharacter: true }
   },
 ];
-
 
 
 // HomeworkPage의 서브 컴포넌트들
@@ -138,7 +137,7 @@ const WeeklyGoldTracker = ({ characters }) => {
     );
 };
 
-const CharacterSettingsModal = ({ isOpen, onClose, character, onSave }) => {
+const CharacterSettingsModal = ({ isOpen, onClose, character, onSave, onDelete }) => {
     const [settings, setSettings] = useState(character.settings);
     const [raids, setRaids] = useState(character.weeklyRaids);
     const [selectedRaidId, setSelectedRaidId] = useState('');
@@ -151,12 +150,18 @@ const CharacterSettingsModal = ({ isOpen, onClose, character, onSave }) => {
         onClose();
     };
     
+    const handleDelete = () => {
+        // eslint-disable-next-line no-restricted-globals
+        if (confirm(`'${character.name}' 캐릭터를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+            onDelete(character.id);
+            onClose();
+        }
+    };
+
     const handleAddRaid = () => {
         if (!selectedRaidId || !selectedDifficultyId) return;
-
         const raidInfo = ALL_RAIDS.find(r => r.id === selectedRaidId);
         const difficultyInfo = raidInfo.difficulties.find(d => d.id === selectedDifficultyId);
-
         const newRaid = {
             raidId: raidInfo.id,
             difficultyId: difficultyInfo.id,
@@ -185,9 +190,26 @@ const CharacterSettingsModal = ({ isOpen, onClose, character, onSave }) => {
                 </div>
                 
                 <div className="space-y-4">
-                    {/* ... 골드 획득, 콘텐츠 표시 설정 UI (기존과 동일) ... */}
-                    
-                    {/* 주간 레이드 관리 */}
+                    <div className="flex items-center justify-between p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg">
+                        <span className="font-semibold">골드 획득 캐릭터 지정</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={settings.isGoldCharacter} onChange={(e) => setSettings({...settings, isGoldCharacter: e.target.checked})} className="sr-only peer" />
+                            <div className="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg">
+                        <span className="font-semibold">주간/일일 숙제 표시</span>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={settings.showWeekly} onChange={(e) => setSettings({...settings, showWeekly: e.target.checked})} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
+                                <span>주간</span>
+                            </label>
+                             <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={settings.showDaily} onChange={(e) => setSettings({...settings, showDaily: e.target.checked})} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
+                                <span>일일</span>
+                            </label>
+                        </div>
+                    </div>
                     <div className="p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg">
                         <h3 className="font-semibold mb-2">주간 레이드 관리</h3>
                         <div className="space-y-2 mb-3">
@@ -212,14 +234,21 @@ const CharacterSettingsModal = ({ isOpen, onClose, character, onSave }) => {
                     </div>
                 </div>
 
-                <button onClick={handleSave} className="mt-6 w-full py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">저장</button>
+                <div className="mt-6 flex gap-2">
+                    <button onClick={handleDelete} className="flex-shrink-0 p-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700">
+                        <Trash2 size={20} />
+                    </button>
+                    <button onClick={handleSave} className="w-full py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
+                        저장
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
 
-const CharacterHomeworkCard = ({ characterData, onUpdate }) => {
+const CharacterHomeworkCard = ({ characterData, onUpdate, onDelete }) => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const data = characterData;
 
@@ -242,7 +271,7 @@ const CharacterHomeworkCard = ({ characterData, onUpdate }) => {
     };
     
     const calculateRemainingGold = (raid) => raid.gold.reduce((total, gold, index) => raid.gates[index] ? total : total + gold, 0);
-
+    
     const setRestGauge = (taskRestKey) => {
         const currentRest = data.daily[taskRestKey];
         const newRestStr = prompt(`휴식 게이지를 입력하세요 (0-10):`, currentRest);
@@ -261,7 +290,7 @@ const CharacterHomeworkCard = ({ characterData, onUpdate }) => {
 
     return (
         <>
-            <CharacterSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} character={data} onSave={onUpdate} />
+            <CharacterSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} character={data} onSave={onUpdate} onDelete={onDelete} />
             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl shadow-lg">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
@@ -326,24 +355,97 @@ const CharacterHomeworkCard = ({ characterData, onUpdate }) => {
     );
 };
 
+const AddExpeditionModal = ({ isOpen, onClose, onAdd }) => {
+    const [charName, setCharName] = useState('');
+
+    if (!isOpen) return null;
+
+    const handleSubmit = () => {
+        if (charName.trim()) {
+            onAdd(charName.trim());
+            setCharName('');
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={onClose}>
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">원정대 추가</h2>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><X size={20} /></button>
+                </div>
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        원정대의 대표 캐릭터명을 입력하세요. 해당 원정대의 모든 캐릭터 정보를 불러옵니다. (현재는 입력한 이름의 캐릭터 1개만 추가됩니다)
+                    </p>
+                    <div>
+                        <label className="text-sm font-semibold">대표 캐릭터명</label>
+                        <input 
+                            type="text" 
+                            value={charName} 
+                            onChange={e => setCharName(e.target.value)} 
+                            placeholder="캐릭터명" 
+                            className="w-full mt-1 p-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" 
+                        />
+                    </div>
+                    <button onClick={handleSubmit} className="w-full py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700">추가</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // 메인 HomeworkPage 컴포넌트
 export default function HomeworkPage() {
     const [characters, setCharacters] = useState(MOCK_CHARACTERS);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const handleUpdateCharacter = (updatedCharacter) => {
         setCharacters(characters.map(c => c.id === updatedCharacter.id ? updatedCharacter : c));
     };
 
+    const handleDeleteCharacter = (characterId) => {
+        setCharacters(characters.filter(c => c.id !== characterId));
+    };
+
+    const handleAddExpedition = (charName) => {
+        const newCharacter = {
+            id: Date.now(),
+            name: charName,
+            class: '미설정',
+            level: 1600,
+            avatar: `https://placehold.co/48x48/cccccc/ffffff?text=${charName.charAt(0)}`,
+            weeklyRaids: [],
+            daily: { kurzanRest: 0, guardianRest: 0, kurzanDone: false, guardianDone: false },
+            memo: '',
+            settings: { showWeekly: true, showDaily: true, isGoldCharacter: false }
+        };
+        setCharacters([...characters, newCharacter]);
+    };
+
     return (
         <div className="p-4 pt-28 space-y-6">
+            <AddExpeditionModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddExpedition} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <LifeEnergyTracker />
                 <WeeklyGoldTracker characters={characters} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {characters.map(char => (
-                    <CharacterHomeworkCard key={char.id} characterData={char} onUpdate={handleUpdateCharacter} />
+                    <CharacterHomeworkCard 
+                        key={char.id} 
+                        characterData={char} 
+                        onUpdate={handleUpdateCharacter}
+                        onDelete={handleDeleteCharacter} 
+                    />
                 ))}
+                <div 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-500 transition-colors min-h-[420px]"
+                >
+                  <Plus size={48} className="text-gray-400 dark:text-gray-500" />
+                </div>
             </div>
         </div>
     );

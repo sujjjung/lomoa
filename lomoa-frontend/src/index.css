@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+    font-family: 'LomoaFont';
+    src: url('./assets/fonts/a타이틀고딕1.ttf') format('truetype'); 
+    font-weight: normal;
+    font-style: normal;
+}
