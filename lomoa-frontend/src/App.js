@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 // 컴포넌트와 페이지들을 불러옵니다.
 import Header from './components/Header';
 import SocialModal from './components/SocialModal';
+import AuthModal from './components/AuthModal'; // AuthModal import
 import HomePage from './pages/HomePage';
 import HomeworkPage from './pages/HomeworkPage';
 import CharacterSearchPage from './pages/CharacterSearchPage'; // 검색 페이지 import
@@ -20,6 +21,10 @@ export default function App() {
   // 검색어 상태 추가
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 로그인 상태 관리
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
   // 테마가 변경될 때마다 HTML 전체에 클래스를 적용합니다.
   useEffect(() => {
     const root = window.document.documentElement;
@@ -56,6 +61,8 @@ export default function App() {
         theme={theme} 
         setTheme={setTheme}
         onSearch={handleSearch} // 검색 함수를 Header에 전달
+        isLoggedIn={isLoggedIn}
+        onLoginClick={() => setIsAuthModalOpen(true)}
       />
       
       {/* 메인 컨텐츠 영역: renderPage 함수가 반환하는 페이지가 여기에 보입니다. */}
@@ -72,6 +79,14 @@ export default function App() {
 
       {/* 소셜 모달창 컴포넌트 */}
       <SocialModal isOpen={isSocialModalOpen} setIsOpen={setIsSocialModalOpen} />
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onLoginSuccess={() => {
+            setIsLoggedIn(true);
+            setIsAuthModalOpen(false);
+        }}
+      />
     </div>
   );
 }
