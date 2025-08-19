@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart2, Gem, Heart, Star, User, Users, Check } from 'lucide-react';
+import { BarChart2, User, Check } from 'lucide-react';
 
 // Mock Data based on user-provided images
 const MOCK_CHARACTER_DATA = {

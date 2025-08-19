@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Trash2, Plus, X, Eye, EyeOff, CheckSquare } from 'lucide-react';
+import { Settings, Trash2, Plus, X, Eye, EyeOff, CheckSquare, Save } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 // 서브 컴포넌트들
+// 원정대 추가
 const AddExpeditionModal = ({ isOpen, onClose, onAdd }) => {
     const [charName, setCharName] = useState('');
     if (!isOpen) return null;
@@ -170,20 +172,6 @@ const CharacterSettingsModal = ({ isOpen, onClose, character, onUpdate, allRaids
                         <div className="p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg"><span className="font-semibold text-sm">골드 획득</span><label className="relative inline-flex items-center cursor-pointer mt-2"><input type="checkbox" checked={settings.isGoldCharacter} onChange={(e) => setSettings({...settings, isGoldCharacter: e.target.checked})} className="sr-only peer" /><div className="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div></label></div>
                         <div className="p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg"><span className="font-semibold text-sm">캐릭터 숨기기</span><label className="relative inline-flex items-center cursor-pointer mt-2"><input type="checkbox" checked={settings.isHidden} onChange={(e) => setSettings({...settings, isHidden: e.target.checked})} className="sr-only peer" /><div className="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div></label></div>
                     </div>
-                    {/* 콘텐츠 표시 설정 */}
-                    <div className="flex items-center justify-between p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg">
-                        <span className="font-semibold">주간/일일 숙제 표시</span>
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={settings.showWeekly} onChange={(e) => setSettings({...settings, showWeekly: e.target.checked})} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
-                                <span>주간</span>
-                            </label>
-                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={settings.showDaily} onChange={(e) => setSettings({...settings, showDaily: e.target.checked})} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
-                                <span>일일</span>
-                            </label>
-                        </div>
-                    </div>
                     <div className="p-3 bg-gray-200 dark:bg-gray-700/50 rounded-lg"><h3 className="font-semibold mb-2">주간 레이드 관리</h3><div className="space-y-2 mb-3">{raids.map(raid => (<div key={raid.difficultyId} className="flex items-center justify-between text-sm"><span>{raid.name} <span className="text-purple-400 font-semibold">{raid.difficultyName}</span></span><button onClick={() => handleRemoveRaid(raid.difficultyId)} className="text-red-500 hover:text-red-700 text-xs">삭제</button></div>))}</div><div className="grid grid-cols-3 gap-2"><select value={selectedRaidId} onChange={(e) => {setSelectedRaidId(e.target.value); setSelectedDifficultyId('');}} className="col-span-1 p-2 bg-gray-50 dark:bg-gray-600 rounded-lg border border-gray-300 dark:border-gray-500 focus:outline-none"><option value="">레이드</option>{availableRaids.map(raid => (<option key={raid.id} value={raid.id}>{raid.name}</option>))}</select><select value={selectedDifficultyId} onChange={(e) => setSelectedDifficultyId(e.target.value)} disabled={!selectedRaidId} className="col-span-1 p-2 bg-gray-50 dark:bg-gray-600 rounded-lg border border-gray-300 dark:border-gray-500 focus:outline-none disabled:opacity-50"><option value="">난이도</option>{selectedRaidId && allRaids.find(r => r.id === selectedRaidId).difficulties.map(diff => (<option key={diff.id} value={diff.id}>{diff.name}</option>))}</select><button onClick={handleAddRaid} disabled={!selectedDifficultyId} className="col-span-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 dark:disabled:bg-gray-600">추가</button></div></div>
                 </div>
                 <div className="mt-6 flex gap-2"><button onClick={handleDelete} className="flex-shrink-0 p-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700"><Trash2 size={20} /></button><button onClick={handleSave} className="w-full py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">저장</button></div>
@@ -196,6 +184,8 @@ const CharacterSettingsModal = ({ isOpen, onClose, character, onUpdate, allRaids
 const CharacterHomeworkCard = ({ characterData, onUpdate, allRaids }) => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const data = characterData;
+
+    const calculateRemainingGold = (raid) => (raid.gold || []).reduce((total, gold, index) => raid.gates[index] ? total : total + gold, 0);
 
     const toggleGate = (difficultyId, gateIndex) => {
         const raid = data.weeklyRaids.find(r => r.difficultyId === difficultyId);
@@ -242,7 +232,7 @@ const CharacterHomeworkCard = ({ characterData, onUpdate, allRaids }) => {
                                 return (
                                     <div key={raid.difficultyId} className={`p-2 rounded-lg ${isRaidComplete ? 'bg-gray-200/50 dark:bg-gray-700/20' : 'bg-gray-200 dark:bg-gray-700/50'}`}>
                                         <div className="flex items-center justify-between"><span className={`font-semibold text-sm ${isRaidComplete ? 'line-through text-gray-500' : ''}`}>{raid.name} <span className="text-purple-400">{raid.difficultyName}</span></span><div className="flex gap-1.5">{(raid.gates || []).map((isCleared, index) => (<button key={index} onClick={() => toggleGate(raid.difficultyId, index)} className={`w-7 h-7 rounded-md text-sm font-bold flex items-center justify-center ${isCleared ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}>{index + 1}</button>))}</div></div>
-                                        {data.settings.isGoldCharacter && <div className="flex justify-end items-center mt-1 gap-2 text-xs">더보기: {(raid.more_gold_checked || []).map((isChecked, i) => <CheckSquare key={i} onClick={() => toggleMoreGold(raid.difficultyId, i)} className={`cursor-pointer ${isChecked ? 'text-yellow-500' : 'text-gray-400'}`} size={16}/>)}</div>}
+                                        {data.settings.isGoldCharacter && <div className="flex justify-between items-center mt-1 text-xs"><span className="text-gray-400">{calculateRemainingGold(raid).toLocaleString()} G</span><div className="flex items-center gap-2">{(raid.more_gold_checked || []).map((isChecked, i) => <CheckSquare key={i} onClick={() => toggleMoreGold(raid.difficultyId, i)} className={`cursor-pointer ${isChecked ? 'text-yellow-500' : 'text-gray-400'}`} size={16}/>)}</div></div>}
                                     </div>
                                 );
                             })}
@@ -277,9 +267,7 @@ export default function HomeworkPage({ characters, setCharacters }) {
                 const data = await response.json();
                 if (!response.ok) throw new Error('Failed to fetch raids');
                 setAllRaids(data);
-            } catch (error) {
-                console.error(error);
-            }
+            } catch (error) { console.error(error); }
         };
         fetchAllRaids();
     }, []);
@@ -308,8 +296,7 @@ export default function HomeworkPage({ characters, setCharacters }) {
                  url = `http://localhost:8000/api/characters/${payload.characterId}/daily`;
                  body = { daily: payload.daily };
                  break;
-            default:
-                return;
+            default: return;
         }
 
         try {
@@ -327,6 +314,22 @@ export default function HomeworkPage({ characters, setCharacters }) {
             alert(error.message);
         }
     };
+
+    const handleDragEnd = async (result) => {
+        if (!result.destination) return;
+        const items = Array.from(characters);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+        setCharacters(items);
+
+        const orderedIds = items.map(item => item.id);
+        const token = localStorage.getItem('userToken');
+        await fetch('http://localhost:8000/api/characters/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ orderedIds }),
+        });
+    };
     
     const visibleCharacters = (characters || []).filter(c => showHidden || !c.settings.isHidden);
 
@@ -343,20 +346,27 @@ export default function HomeworkPage({ characters, setCharacters }) {
                     숨긴 캐릭터 {showHidden ? '끄기' : '보기'}
                 </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {visibleCharacters.map(char => (
-                    <div key={char.id} className={`transition-opacity ${char.settings.isHidden ? 'opacity-50' : ''}`}>
-                        <CharacterHomeworkCard 
-                            characterData={char} 
-                            onUpdate={handleUpdate}
-                            allRaids={allRaids}
-                        />
-                    </div>
-                ))}
-                <div onClick={() => setIsAddModalOpen(true)} className="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-500 transition-colors min-h-[420px]">
-                  <Plus size={48} className="text-gray-400 dark:text-gray-500" />
-                </div>
-            </div>
+            <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="characters">
+                    {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {visibleCharacters.map((char, index) => (
+                                <Draggable key={char.id} draggableId={String(char.id)} index={index}>
+                                    {(provided) => (
+                                        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`transition-opacity ${char.settings.isHidden ? 'opacity-50' : ''}`}>
+                                            <CharacterHomeworkCard characterData={char} onUpdate={handleUpdate} allRaids={allRaids} />
+                                        </div>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                            <div onClick={() => setIsAddModalOpen(true)} className="bg-gray-100 dark:bg-gray-800 rounded-xl shadow-lg flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-500 transition-colors min-h-[420px]">
+                              <Plus size={48} className="text-gray-400 dark:text-gray-500" />
+                            </div>
+                        </div>
+                    )}
+                </Droppable>
+            </DragDropContext>
         </div>
     );
 };

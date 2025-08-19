@@ -261,53 +261,6 @@ app.post('/api/validate-key', async (req, res) => {
     }
 });
 
-// 캐릭터 삭제 API
-app.delete('/api/characters/:id', verifyToken, async (req, res) => {
-    const { id } = req.params;
-    const userId = req.userId;
-    try {
-        // 본인의 캐릭터가 맞는지 확인
-        const [rows] = await dbPool.query('SELECT user_id FROM characters WHERE id = ?', [id]);
-        if (rows.length === 0 || rows[0].user_id !== userId) {
-            return res.status(403).json({ message: '권한이 없습니다.' });
-        }
-        await dbPool.query('DELETE FROM characters WHERE id = ?', [id]);
-        res.status(200).json({ message: '캐릭터가 삭제되었습니다.' });
-    } catch (error) {
-        res.status(500).json({ message: '캐릭터 삭제 중 오류 발생' });
-    }
-});
-
-// 캐릭터 설정 업데이트 API
-app.put('/api/characters/:id/settings', verifyToken, async (req, res) => {
-    const { id } = req.params;
-    const { settings } = req.body;
-    try {
-        await dbPool.query(
-            'UPDATE characters SET is_gold_character = ?, is_hidden = ?, show_weekly = ?, show_daily = ? WHERE id = ? AND user_id = ?',
-            [settings.isGoldCharacter, settings.isHidden, settings.showWeekly, settings.showDaily, id, req.userId]
-        );
-        res.status(200).json({ message: '설정이 저장되었습니다.' });
-    } catch (error) {
-        res.status(500).json({ message: '설정 저장 중 오류 발생' });
-    }
-});
-
-// 주간 레이드 진행도 업데이트 API
-app.put('/api/character-raids/:characterId/:raidId', verifyToken, async (req, res) => {
-    const { characterId, raidId } = req.params;
-    const { gate_progress, more_gold_checked } = req.body;
-    try {
-        await dbPool.query(
-            'UPDATE character_raids SET gate_progress = ?, more_gold_checked = ? WHERE character_id = ? AND raid_id = ?',
-            [JSON.stringify(gate_progress), JSON.stringify(more_gold_checked), characterId, raidId]
-        );
-        res.status(200).json({ message: '레이드 진행도가 저장되었습니다.' });
-    } catch (error) {
-        res.status(500).json({ message: '레이드 진행도 저장 중 오류 발생' });
-    }
-});
-
 // 누구쇼
 app.post('/api/characters/refresh', verifyToken, async (req, res) => {
     const userId = req.userId;
@@ -443,6 +396,91 @@ app.get('/api/raids', async (req, res) => {
         res.status(500).json({ message: '레이드 정보를 불러오는 중 오류가 발생했습니다.' });
     }
 });
+
+// 캐릭터 삭제 API
+app.delete('/api/characters/:id', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.userId;
+    try {
+        const [rows] = await dbPool.query('SELECT user_id FROM characters WHERE id = ?', [id]);
+        if (rows.length === 0 || rows[0].user_id !== userId) return res.status(403).json({ message: '권한이 없습니다.' });
+        await dbPool.query('DELETE FROM characters WHERE id = ?', [id]);
+        res.status(200).json({ message: '캐릭터가 삭제되었습니다.' });
+    } catch (error) { res.status(500).json({ message: '캐릭터 삭제 중 오류 발생' }); }
+});
+
+// 캐릭터 설정 및 레이드 목록 업데이트 API
+app.put('/api/characters/:id/settings', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { settings, raids } = req.body;
+    const connection = await dbPool.getConnection();
+    try {
+        await connection.beginTransaction();
+        await connection.query(
+            'UPDATE characters SET is_gold_character = ?, is_hidden = ?, show_weekly = ?, show_daily = ? WHERE id = ? AND user_id = ?',
+            [settings.isGoldCharacter, settings.isHidden, settings.showWeekly, settings.showDaily, id, req.userId]
+        );
+        await connection.query('DELETE FROM character_raids WHERE character_id = ?', [id]);
+        if (raids && raids.length > 0) {
+            const raidsToInsert = raids.map(raid => [
+                id, raid.difficultyId, JSON.stringify(raid.gates), JSON.stringify(raid.more_gold_checked)
+            ]);
+            await connection.query('INSERT INTO character_raids (character_id, raid_id, gate_progress, more_gold_checked) VALUES ?', [raidsToInsert]);
+        }
+        await connection.commit();
+        res.status(200).json({ message: '설정이 저장되었습니다.' });
+    } catch (error) {
+        await connection.rollback();
+        res.status(500).json({ message: '설정 저장 중 오류 발생' });
+    } finally {
+        connection.release();
+    }
+});
+
+// 일일 숙제 업데이트 API
+app.put('/api/characters/:id/daily', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { daily } = req.body;
+    try {
+        await dbPool.query(
+            'UPDATE characters SET kurzan_rest = ?, guardian_rest = ? WHERE id = ? AND user_id = ?',
+            [daily.kurzanRest, daily.guardianRest, id, req.userId]
+        );
+        res.status(200).json({ message: '일일 숙제가 저장되었습니다.' });
+    } catch (error) {
+        res.status(500).json({ message: '일일 숙제 저장 중 오류 발생' });
+    }
+});
+
+// 캐릭터 순서 저장 API
+app.post('/api/characters/reorder', verifyToken, async (req, res) => {
+    const { orderedIds } = req.body;
+    try {
+        const promises = orderedIds.map((id, index) => 
+            dbPool.query('UPDATE characters SET order_index = ? WHERE id = ? AND user_id = ?', [index, id, req.userId])
+        );
+        await Promise.all(promises);
+        res.status(200).json({ message: '캐릭터 순서가 저장되었습니다.' });
+    } catch (error) {
+        res.status(500).json({ message: '순서 저장 중 오류 발생' });
+    }
+});
+
+// 주간 레이드 진행도 업데이트 API
+app.put('/api/character-raids/:characterId/:raidId', verifyToken, async (req, res) => {
+    const { characterId, raidId } = req.params;
+    const { gate_progress, more_gold_checked } = req.body;
+    try {
+        await dbPool.query(
+            'UPDATE character_raids SET gate_progress = ?, more_gold_checked = ? WHERE character_id = ? AND raid_id = ?',
+            [JSON.stringify(gate_progress), JSON.stringify(more_gold_checked), characterId, raidId]
+        );
+        res.status(200).json({ message: '레이드 진행도가 저장되었습니다.' });
+    } catch (error) {
+        res.status(500).json({ message: '레이드 진행도 저장 중 오류 발생' });
+    }
+});
+
 
 const PORT = 8000;
 app.listen(PORT, () => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, User, Sun, Moon, LogOut, Settings, RefreshCw } from 'lucide-react';
+import { Search, Sun, Moon, LogOut, Settings, RefreshCw } from 'lucide-react';
 
 export default function Header({ setCurrentPage, theme, setTheme, onSearch, isLoggedIn, user, onLoginClick, onProfileClick, onLogout, onRefreshCharacters }) {
   const navItems = ['숙제', '공격대', '재련', '생활', '레이드'];
