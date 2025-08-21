@@ -10,7 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const JWT_SECRET = 'your_super_secret_jwt_key';
+const JWT_SECRET = 'your_super_secret_jwt_key_lomoa';
+const LOSTARK_API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IktYMk40TkRDSTJ5NTA5NWpjTWk5TllqY2lyZyIsImtpZCI6IktYMk40TkRDSTJ5NTA5NWpjTWk5TllqY2lyZyJ9.eyJpc3MiOiJodHRwczovL2x1ZHkuZ2FtZS5vbnN0b3ZlLmNvbSIsImF1ZCI6Imh0dHBzOi8vbHVkeS5nYW1lLm9uc3RvdmUuY29tL3Jlc291cmNlcyIsImNsaWVudF9pZCI6IjEwMDAwMDAwMDA0OTUzNzkifQ.gW6Pc6iqbIbOjadPfVxwpGJZzWElbwfSelI0TBKqxJWMBJdNwWGaPdhd553pZlJNizcXsl155IQ3aazFxKYAzLC47ssx_rwzqaTIDlJ1dXpf35JoK6q7Zj55A3R7gsQu-I4l3Zngca4NlIRasihxLifrWltjYBUHAoCyom-dNenTmkX5Khb3d-BfdoL_yihZadhF-Gtx2XQllGDrXvQ0ab7aK_W7MSEeax9E99ix39k-da5GjBEkPxxjMuQSW8GxjwyEK1tOcES9eh42Jlu6lpU3mj9XJE7cNbdI8TVpLCpiKmMLBBNdMHMk095EhSiaRpCoS8aYRrhzKTb1QOwWbw";
 
 // --- 데이터베이스 연결 풀 ---
 const dbPool = mysql.createPool({
@@ -729,7 +730,7 @@ app.put('/api/characters/:characterId/daily', verifyToken, async (req, res) => {
     }
 });
 
-// GET: 사용자의 모든 트래커 조회
+// 생활의 기운 처음 추가
 app.get('/api/life-energy', verifyToken, async (req, res) => {
     try {
         const [trackers] = await dbPool.query('SELECT * FROM life_energy_trackers WHERE user_id = ? ORDER BY id ASC', [req.userId]);
@@ -739,7 +740,7 @@ app.get('/api/life-energy', verifyToken, async (req, res) => {
     }
 });
 
-// POST: 새 트래커 추가
+// 생활의 기운 부계정 추가
 app.post('/api/life-energy', verifyToken, async (req, res) => {
     const { character_name } = req.body;
     try {
@@ -754,7 +755,7 @@ app.post('/api/life-energy', verifyToken, async (req, res) => {
     }
 });
 
-// PUT: 트래커 업데이트
+// 생활의 기운 부계정 생활의 기운 업데이트
 app.put('/api/life-energy/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     const { character_name, energy, max_energy, has_beatrice_blessing } = req.body;
@@ -769,7 +770,7 @@ app.put('/api/life-energy/:id', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE: 트래커 삭제
+// 생활의 기운 부계정 삭제
 app.delete('/api/life-energy/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     try {
@@ -779,6 +780,58 @@ app.delete('/api/life-energy/:id', verifyToken, async (req, res) => {
         res.status(500).json({ message: '데이터 삭제 중 오류 발생' });
     }
 });
+
+// 모험섬
+app.get('/api/lostark/contents', async (req, res) => {
+    if (!LOSTARK_API_KEY) {
+        return res.status(503).json({ message: '서버에 API 키가 설정되지 않았습니다.' });
+    }
+    try {
+        const response = await axios.get('https://developer-lostark.game.onstove.com/gamecontents/calendar', {
+            headers: { 
+                'accept': 'application/json',
+                'authorization': `bearer ${LOSTARK_API_KEY}`
+            }
+        });
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error("콘텐츠 캘린더 조회 오류:", error.response?.data || error.message);
+        if (error.response?.status === 401) {
+             return res.status(401).json({ message: '서버의 API 키가 유효하지 않습니다.' });
+        }
+        res.status(500).json({ message: '콘텐츠 캘린더를 불러오는 중 오류가 발생했습니다.' });
+    }
+});
+
+// [수정] 로스트아크 공지사항 (공식 API 사용)
+app.get('/api/lostark/notices', async (req, res) => {
+    if (!LOSTARK_API_KEY) {
+        return res.status(503).json({ message: '서버에 API 키가 설정되지 않았습니다.' });
+    }
+    try {
+        const response = await axios.get('https://developer-lostark.game.onstove.com/news/notices', {
+            headers: {
+                'accept': 'application/json',
+                'authorization': `bearer ${LOSTARK_API_KEY}`
+            }
+        });
+
+        // API 응답 데이터 (최신 5개)를 프론트엔드가 사용하기 좋은 형식으로 가공
+        const notices = response.data.slice(0, 5).map((item, index) => ({
+            id: index,
+            category: item.Type,
+            title: item.Title,
+            date: new Date(item.Date).toISOString().split('T')[0].replace(/-/g, '.'), // "2025-08-22" -> "2025.08.22"
+            link: item.Link,
+        }));
+
+        res.status(200).json(notices);
+    } catch (error) {
+        console.error("공지사항 API 오류:", error.response?.data || error.message);
+        res.status(500).json({ message: '공지사항을 불러오는 중 오류가 발생했습니다.' });
+    }
+});
+
 
 const PORT = 8000;
 app.listen(PORT, () => {
