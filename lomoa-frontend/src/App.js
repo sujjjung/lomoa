@@ -3,6 +3,7 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import HomeworkPage from './pages/HomeworkPage';
 import RaidPage from './pages/RaidPage';
+import CalPage from './pages/CalPage';
 import CharacterSearchPage from './pages/CharacterSearchPage';
 import PlaceholderPage from './components/PlaceholderPage';
 import AuthModal from './components/AuthModal';
@@ -146,7 +147,7 @@ export default function App() {
             case '재련':
             case '생활':
             case '레이드':
-                return <PlaceholderPage title={currentPage} />;
+                return <CalPage />;
             default:
                 return <HomePage />;
         }
