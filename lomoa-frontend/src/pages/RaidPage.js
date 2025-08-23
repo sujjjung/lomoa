@@ -236,7 +236,7 @@ export default function RaidPage() {
     const [selectedRaidId, setSelectedRaidId] = useState(1);
 
     return (
-        <div className="pt-20 flex h-screen">
+        <div className="flex h-screen">
             <RaidSidebar joinedRaids={MOCK_JOINED_RAIDS} onSelect={setSelectedRaidId} selectedRaidId={selectedRaidId} />
             <div className="flex-grow h-full overflow-y-auto">
                 {selectedRaidId ? <RaidDetailView raid={MOCK_RAID_DETAILS[selectedRaidId]} /> : <RaidDiscoveryView />}

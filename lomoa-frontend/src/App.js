@@ -79,7 +79,9 @@ export default function App() {
         fetchCharacters();
     }, [isLoggedIn, fetchCharacters]);
 
-    // 로그인 성공 처리
+
+    // --- 함수 ---
+
     const handleLoginSuccess = (data) => {
         localStorage.setItem('userToken', data.token);
         localStorage.setItem('userData', JSON.stringify(data.user));
@@ -87,17 +89,16 @@ export default function App() {
         setUser(data.user);
         setIsLoggedIn(true);
         setIsAuthModalOpen(false);
-        setCurrentPage('숙제'); // 로그인 후 숙제 페이지로 이동
+        setCurrentPage('숙제');
     };
 
-    // 로그아웃 처리
     const handleLogout = () => {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
         setToken(null);
         setUser(null);
         setIsLoggedIn(false);
-        setCurrentPage('home'); // 로그아웃 후 홈으로 이동
+        setCurrentPage('home');
     };
 
     // 회원정보 업데이트 처리
@@ -167,7 +168,8 @@ export default function App() {
                 onLogout={handleLogout}
                 onRefreshCharacters={fetchCharacters}
             />
-            <main className="max-w-screen-xl mx-auto">
+            {/* [수정] main 태그에 레이아웃 클래스 추가 */}
+            <main className="max-w-screen-xl mx-auto px-4 pt-24">
                 {renderPage()}
             </main>
             

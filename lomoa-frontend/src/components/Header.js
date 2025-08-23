@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Sun, Moon, LogOut, Settings, RefreshCw } from 'lucide-react';
+import logo from '../assets/image/lomoa_eng.png';
 
 export default function Header({ setCurrentPage, theme, setTheme, onSearch, isLoggedIn, user, onLoginClick, onProfileClick, onLogout, onRefreshCharacters }) {
   const navItems = ['숙제', '공격대', '재련', '생활', '레이드'];
@@ -43,7 +44,7 @@ export default function Header({ setCurrentPage, theme, setTheme, onSearch, isLo
           onClick={() => setCurrentPage('home')}
         >
           <img
-            src={theme === 'dark' ? "https://placehold.co/120x40/transparent/ffffff?text=LOMOA&font=raleway" : "https://placehold.co/120x40/transparent/1f2937?text=LOMOA&font=raleway"}
+            src={theme === 'dark' ? "logo" : "logo"}
             alt="LOMOA Logo"
             className="w-full h-full object-contain"
           />

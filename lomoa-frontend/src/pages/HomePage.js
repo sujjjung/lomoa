@@ -63,24 +63,27 @@ const AddEventModal = ({ isOpen, onClose, onAddEvent }) => {
 // [수정] 주간 캘린더 카드
 const WeeklyCalendarCard = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [events, setEvents] = useState({}); // 개인 일정
+    const [events, setEvents] = useState({});
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
-    // [추가] 주간 콘텐츠 토글 상태
-    const [showContents, setShowContents] = useState({
-        fieldBoss: true, // 필드보스
-        chaosGate: true, // 카오스게이트
-    });
+    const [showContents, setShowContents] = useState({ fieldBoss: true, chaosGate: true });
 
     const changeWeek = (offset) => {
-        setCurrentDate(prevDate => {
-            const newDate = new Date(prevDate);
-            newDate.setDate(newDate.getDate() + offset * 7);
-            return newDate;
-        });
+        setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + offset * 7); return d; });
     };
 
-    const handleAddEvent = (newEvent) => { /* 이전과 동일 */ };
+    const EventBadge = ({ title, type }) => {
+        const typeStyles = {
+            personal: 'bg-green-500/80 text-white',
+            fieldBoss: 'bg-red-500/80 text-white',
+            chaosGate: 'bg-sky-500/80 text-white', // [수정] 메인 컬러 변경
+        };
+        // [수정] text-center 추가
+        return (
+            <div className={`p-1.5 rounded-md text-center ${typeStyles[type] || 'bg-gray-200'}`}>
+                <p className="text-xs font-bold truncate">{title}</p>
+            </div>
+        );
+    };
 
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const weekDays = Array(7).fill(0).map((_, i) => {
@@ -89,27 +92,13 @@ const WeeklyCalendarCard = () => {
         return d;
     });
 
-    const EventBadge = ({ title, type }) => {
-        const typeStyles = {
-            personal: 'bg-green-500/80 text-white',
-            fieldBoss: 'bg-red-500/80 text-white',
-            chaosGate: 'bg-purple-500/80 text-white',
-        };
-        return (
-            <div className={`p-1.5 rounded-md ${typeStyles[type] || 'bg-gray-200'}`}>
-                <p className="text-xs font-bold truncate">{title}</p>
-            </div>
-        );
-    };
-
     return (
         <>
-            <AddEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddEvent={handleAddEvent} />
+            <AddEventModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddEvent={(e) => {}} />
             <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg h-full">
                 <div className="flex justify-between items-center mb-6">
                     <p className="font-bold text-xl">{`${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`}</p>
                     <div className="flex items-center space-x-2">
-                        {/* 주간 콘텐츠 토글 */}
                         <label className="flex items-center cursor-pointer text-sm">
                             <input type="checkbox" checked={showContents.fieldBoss} onChange={() => setShowContents(s => ({...s, fieldBoss: !s.fieldBoss}))} className="sr-only peer" />
                             <div className="w-9 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
@@ -117,7 +106,7 @@ const WeeklyCalendarCard = () => {
                         </label>
                         <label className="flex items-center cursor-pointer text-sm">
                             <input type="checkbox" checked={showContents.chaosGate} onChange={() => setShowContents(s => ({...s, chaosGate: !s.chaosGate}))} className="sr-only peer" />
-                            <div className="w-9 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                            <div className="w-9 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
                             <span className="ml-2 font-semibold">카오스게이트</span>
                         </label>
                         <div className="border-l h-5 mx-2 border-gray-300 dark:border-gray-600"></div>
@@ -128,11 +117,7 @@ const WeeklyCalendarCard = () => {
                 </div>
                 <div className="grid grid-cols-7 gap-4 text-center">
                     {weekDays.map((date, i) => {
-                        const dateString = date.toISOString().split('T')[0];
-                        const dayEvents = events[dateString] || [];
-                        const dayOfWeek = date.getDay(); // 0:일, 1:월, ...
-                        
-                        // 주간 콘텐츠 일정 추가
+                        const dayOfWeek = date.getDay();
                         const weeklyContents = [];
                         if(showContents.fieldBoss && [0, 2, 5].includes(dayOfWeek)) weeklyContents.push({ title: '필드보스', type: 'fieldBoss' });
                         if(showContents.chaosGate && [0, 1, 4, 6].includes(dayOfWeek)) weeklyContents.push({ title: '카오스게이트', type: 'chaosGate' });
@@ -140,10 +125,9 @@ const WeeklyCalendarCard = () => {
                         return (
                             <div key={i}>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm">{days[i]}</p>
-                                <p className={`font-bold text-lg mt-1 ${new Date().toDateString() === date.toDateString() ? 'text-purple-600' : ''}`}>{date.getDate()}</p>
+                                <p className={`font-bold text-lg mt-1 ${new Date().toDateString() === date.toDateString() ? 'text-sky-500' : ''}`}>{date.getDate()}</p>
                                 <div className="mt-4 space-y-2 text-left h-32 overflow-y-auto no-scrollbar">
                                     {weeklyContents.map((evt, idx) => <EventBadge key={`wc-${idx}`} {...evt} />)}
-                                    {dayEvents.map((evt, idx) => <EventBadge key={`pe-${idx}`} {...evt} />)}
                                 </div>
                             </div>
                         );
@@ -314,7 +298,8 @@ const NoticeAndEventsCard = () => {
 // 메인 HomePage 컴포넌트
 export default function HomePage() {
   return (
-    <div className="p-4 pt-28 space-y-6">
+    // [수정] 페이지별 상단 여백(pt-28) 제거
+    <div className="p-4 pt-4 space-y-6">
         <div className="w-full">
             <WeeklyCalendarCard />
         </div>

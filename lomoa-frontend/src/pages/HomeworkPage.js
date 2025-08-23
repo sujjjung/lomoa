@@ -634,7 +634,7 @@ export default function HomeworkPage({ characters, setCharacters, fetchCharacter
     const visibleCharacters = (characters || []).filter(c => showHidden || !c.settings.isHidden);
 
     return (
-        <div className="p-4 pt-28 space-y-6">
+        <div className="p-4 pt-4 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <LifeEnergyTracker trackers={lifeEnergyTrackers} onUpdate={handleUpdate} />
                 <WeeklyGoldTracker characters={characters} />
